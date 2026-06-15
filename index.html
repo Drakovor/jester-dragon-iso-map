@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jester Wyrm Court - 2.5D Isometric Map</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="map-shell">
+      <canvas id="iso-map" aria-label="Carte isometrique 2.5D Jester Wyrm Court"></canvas>
+
+      <header class="hud topbar">
+        <div class="brand">
+          <span class="crest" aria-hidden="true"></span>
+          <div>
+            <p class="micro">2.5D isometric environment</p>
+            <h1>Jester Wyrm Court</h1>
+          </div>
+        </div>
+        <nav class="actions" aria-label="Map controls">
+          <button id="reset-view" type="button" title="Reset view" aria-label="Reset view">R</button>
+          <button id="cycle-point" type="button" title="Next landmark" aria-label="Next landmark">N</button>
+        </nav>
+      </header>
+
+      <aside class="hud inspector" aria-label="Selected landmark">
+        <p class="micro">Selected landmark</p>
+        <h2 id="place-name">Laughing Rift</h2>
+        <p id="place-type">central objective</p>
+        <p id="place-copy">
+          A violet wound under the court floor, ringed by broken masks and dragon stone.
+        </p>
+      </aside>
+
+      <aside class="hud minimap-panel" aria-label="Mini map">
+        <canvas id="mini-map" width="240" height="150"></canvas>
+      </aside>
+
+      <div id="labels" aria-hidden="true"></div>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
