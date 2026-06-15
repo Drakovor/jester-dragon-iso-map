@@ -2,34 +2,35 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Jester Wyrm Court - 2.5D Isometric Map</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Drako Lair</title>
+    <link rel="stylesheet" href="./styles.css?v=drako-lair-game-v12" />
   </head>
   <body>
     <main class="map-shell">
-      <canvas id="iso-map" aria-label="Carte isometrique 2.5D Jester Wyrm Court"></canvas>
+      <canvas id="iso-map" aria-label="Carte isometrique 2.5D Drako Lair"></canvas>
 
       <header class="hud topbar">
         <div class="brand">
           <span class="crest" aria-hidden="true"></span>
           <div>
-            <p class="micro">2.5D isometric environment</p>
-            <h1>Jester Wyrm Court</h1>
+            <h1>Drako Lair</h1>
           </div>
         </div>
         <nav class="actions" aria-label="Map controls">
-          <button id="reset-view" type="button" title="Reset view" aria-label="Reset view">R</button>
-          <button id="cycle-point" type="button" title="Next landmark" aria-label="Next landmark">N</button>
+          <button id="reset-view" type="button" title="Recentrer la carte" aria-label="Recentrer la carte">Centre</button>
+          <button id="camera-mode" type="button" title="Changer la camera" aria-label="Changer la camera">Vue jeu</button>
+          <button id="cycle-point" type="button" title="Secteur suivant" aria-label="Secteur suivant">Suiv.</button>
         </nav>
       </header>
 
-      <aside class="hud inspector" aria-label="Selected landmark">
-        <p class="micro">Selected landmark</p>
-        <h2 id="place-name">Laughing Rift</h2>
-        <p id="place-type">central objective</p>
+      <aside class="hud inspector" aria-label="Secteur selectionne">
+        <p class="micro">Secteur actif</p>
+        <h2 id="place-name">The Bent Court</h2>
+        <p id="place-type">district central</p>
+        <p id="place-function">Hub d'anomalie: ouvre, ferme ou deforme les routes proches.</p>
         <p id="place-copy">
-          A violet wound under the court floor, ringed by broken masks and dragon stone.
+          La premiere cour reste un district local: masques devines dans l'architecture, rift violet, routes croches et matiere vivante.
         </p>
       </aside>
 
@@ -40,6 +41,6 @@
       <div id="labels" aria-hidden="true"></div>
     </main>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=drako-lair-game-v12"></script>
   </body>
 </html>

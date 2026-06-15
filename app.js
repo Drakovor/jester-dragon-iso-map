@@ -5,20 +5,26 @@
   const miniCtx = miniCanvas.getContext("2d");
   const labelsRoot = document.getElementById("labels");
   const paintedMap = new Image();
+  const gameplayMap = new Image();
 
   const ui = {
     reset: document.getElementById("reset-view"),
+    camera: document.getElementById("camera-mode"),
     cycle: document.getElementById("cycle-point"),
     name: document.getElementById("place-name"),
     type: document.getElementById("place-type"),
+    effect: document.getElementById("place-function"),
     copy: document.getElementById("place-copy"),
   };
 
   const TILE_W = 78;
   const TILE_H = 39;
   const HEIGHT = 28;
-  const MAP_RX = 14.2;
-  const MAP_RZ = 10.8;
+  const MAP_RX = 18;
+  const MAP_RZ = 18;
+  const PAINTED_MAP_SIZE = 1254;
+  const GAMEPLAY_MAP_W = 1536;
+  const GAMEPLAY_MAP_H = 1024;
 
   const palette = {
     void: [6, 3, 11],
@@ -45,57 +51,207 @@
   const landmarks = [
     {
       id: "rift",
-      name: "Faille Rieuse",
-      type: "objectif central",
+      name: "The Bent Court",
+      type: "district central",
       x: 0,
-      z: 0,
+      z: 1.2,
+      sceneX: 1030,
+      sceneY: 420,
       scale: 1.1,
-      copy: "Une blessure violette sous la cour, cerclée de masques brises et de pierre draconique.",
+      effect: "Hub d'anomalie: ouvre, ferme ou deforme les routes proches.",
+      copy: "La premiere cour reste un district local: masques devines dans l'architecture, rift violet, routes croches et matiere vivante.",
     },
     {
       id: "jester-throne",
-      name: "Trone du Bouffon",
-      type: "citadelle masquee",
-      x: -7.2,
-      z: -4.8,
+      name: "The Rule Seat",
+      type: "architecture de cour",
+      x: -2.1,
+      z: -1.6,
+      sceneX: 820,
+      sceneY: 535,
       scale: 1,
-      copy: "Un balcon de damier noir et or ou les tours portent des cloches et des pointes.",
+      effect: "Decision: peut modifier les regles d'une expedition.",
+      copy: "Un reste de tribunal masque sans nommer le masque. Les bannieres, pointes et angles cassent volontairement la geometrie.",
     },
     {
       id: "wyrm-nest",
-      name: "Nid des Wyrms",
-      type: "antre dragon",
-      x: 7.4,
-      z: -4.9,
+      name: "Molt-Crown Hollow",
+      type: "trace de creature",
+      x: 3.6,
+      z: 3.4,
+      sceneX: 1240,
+      sceneY: 615,
       scale: 1,
-      copy: "Des os de dragon forment une couronne autour d'un nid chaud, rouge et violet.",
+      effect: "Pression creature: augmente le risque mais peut reveler des traces rares.",
+      copy: "Un creux d'ossements et de mues. La creature n'est pas encore nommee; on la comprend par ses traces.",
     },
     {
-      id: "bell-gate",
-      name: "Porte des Cloches",
-      type: "entree nord",
-      x: -8.6,
-      z: 4.9,
+      id: "pistachio-grove",
+      name: "Viridian Quiet",
+      type: "foret maudite",
+      x: -7.6,
+      z: -8.7,
+      sceneX: 430,
+      sceneY: 360,
       scale: 0.9,
-      copy: "Deux arches tordues gardent la route; chaque chaine finit par une cloche doree.",
+      effect: "Relique: reactive les racines et revele des passages scelles.",
+      copy: "Racines anciennes, lueurs pistache et autels tordus. Ici le vert n'est pas une foret saine, c'est une energie ancienne.",
     },
     {
-      id: "mirror-river",
-      name: "Riviere Miroir",
-      type: "passage sombre",
-      x: 5.8,
-      z: 6.6,
+      id: "root-crown",
+      name: "Crownroot Quiet",
+      type: "sanctuaire vegetal",
+      x: -10.1,
+      z: -11.5,
+      sceneX: 525,
+      sceneY: 145,
       scale: 0.9,
-      copy: "Une eau bleu-noir renvoie les masques a l'envers et cache les dalles cassees.",
+      effect: "Seuil: demande une offrande ou action collective pour stabiliser la zone.",
+      copy: "Un cercle de racines-couronnes. Les traces de creature sont lentes, hautes, presque ceremoniales.",
     },
     {
-      id: "black-drake",
-      name: "Spire du Drake",
-      type: "vigie volante",
-      x: 2.2,
-      z: -8.0,
+      id: "ember-caldera",
+      name: "Ash Scar",
+      type: "region volcanique",
+      x: 6.4,
+      z: -9.5,
+      sceneX: 1130,
+      sceneY: 185,
       scale: 0.95,
-      copy: "Une tour mince ou l'ombre d'un dragon tourne au-dessus des bannieres violettes.",
+      effect: "Instabilite: routes chaudes, cout d'expedition variable.",
+      copy: "Pierre noire, fissures orange et citadelles chauffees par dessous. L'ember reste rare: signal de danger, pas palette principale.",
+    },
+    {
+      id: "ember-bastion",
+      name: "Black Furnace Gate",
+      type: "forteresse brulee",
+      x: 11.2,
+      z: -10.5,
+      sceneX: 1410,
+      sceneY: 225,
+      scale: 0.88,
+      effect: "Verrou: bloque une route tant que la chaleur n'est pas abaissee.",
+      copy: "Une ligne fortifiee au bord de la caldera. Les tours sont plus militaires, plus seches, moins cour.",
+    },
+    {
+      id: "mirror-reaches",
+      name: "The Drowned Mirror",
+      type: "region aquatique",
+      x: -11.3,
+      z: -2.4,
+      sceneX: 190,
+      sceneY: 525,
+      scale: 0.95,
+      effect: "Route menteuse: peut afficher une destination avant d'en reveler une autre.",
+      copy: "Ponts rompus, eau bleu-noir, ruines englouties. Les creatures ici laissent des sillons et des remous, pas des nids.",
+    },
+    {
+      id: "drowned-bridge",
+      name: "Sunken Bridgeworks",
+      type: "ruines noyees",
+      x: -13.4,
+      z: 1.0,
+      sceneX: 85,
+      sceneY: 675,
+      scale: 0.82,
+      effect: "Raccourci: peut ouvrir une traverse si le niveau d'eau change.",
+      copy: "Un ancien reseau de passerelles noyees qui pourra devenir zone communautaire, donjon ou route cachee.",
+    },
+    {
+      id: "crystal-maw",
+      name: "Crystal Maw",
+      type: "mineral vivant",
+      x: 9.5,
+      z: -1.7,
+      sceneX: 1310,
+      sceneY: 405,
+      scale: 0.94,
+      effect: "Echo mineral: amplifie les reliques mais attire les fouisseurs.",
+      copy: "Cristaux violets et pistache, fractures minerales, traces de creature fouisseuse dans la pierre.",
+    },
+    {
+      id: "green-spire",
+      name: "Viridian Fang Spire",
+      type: "cristal maudit",
+      x: 11.6,
+      z: 4.6,
+      sceneX: 1370,
+      sceneY: 695,
+      scale: 0.86,
+      effect: "Signal: revele les fractures proches sur la carte.",
+      copy: "Une dent de cristal verte qui donne une silhouette differente du rift violet central.",
+    },
+    {
+      id: "scalegrave",
+      name: "Scalegrave Flats",
+      type: "champ de traces",
+      x: -1.8,
+      z: 8.4,
+      sceneX: 720,
+      sceneY: 760,
+      scale: 1,
+      effect: "Lecture de traces: choisit entre prudence, chasse ou recolte.",
+      copy: "Os, plaques d'ecailles, griffures et peaux mues. Les creatures dominent le terrain sans apparaitre frontalement.",
+    },
+    {
+      id: "rib-path",
+      name: "Rib Road",
+      type: "route fossile",
+      x: 1.8,
+      z: 12.0,
+      sceneX: 825,
+      sceneY: 900,
+      scale: 0.83,
+      effect: "Passage: relie surface et couches basses.",
+      copy: "Une route bordee de restes immenses. Elle relie la surface aux zones plus basses du monde.",
+    },
+    {
+      id: "undercroft",
+      name: "Obsidian Undercroft",
+      type: "entree souterraine",
+      x: -10.4,
+      z: 11.2,
+      sceneX: 250,
+      sceneY: 850,
+      scale: 0.94,
+      effect: "Descente: ouvre une couche souterraine quand elle sera implementee.",
+      copy: "Cavernes, champignons froids et architecture enterree. Cette zone peut devenir la premiere couche underground.",
+    },
+    {
+      id: "fungal-vault",
+      name: "Fungal Vault",
+      type: "biome souterrain",
+      x: -6.7,
+      z: 12.9,
+      sceneX: 475,
+      sceneY: 915,
+      scale: 0.82,
+      effect: "Risque toxique: ressources rares, expedition instable.",
+      copy: "Une poche lumineuse sous la carte: pistache plus humide, plus toxique, moins noble.",
+    },
+    {
+      id: "rootglass",
+      name: "Rootglass Wilds",
+      type: "foret cristalline",
+      x: 9.1,
+      z: 9.3,
+      sceneX: 1195,
+      sceneY: 845,
+      scale: 0.94,
+      effect: "Mutation: change les traces et les recompenses d'une expedition.",
+      copy: "Arbres vitreux, brume verte, os pris dans les racines. Une nature qui a appris les formes des cristaux.",
+    },
+    {
+      id: "crooked-bastion",
+      name: "Crooked Bastion",
+      type: "citadelle gothique",
+      x: 13.1,
+      z: -8.6,
+      sceneX: 1460,
+      sceneY: 250,
+      scale: 0.92,
+      effect: "Revelation verticale: peut exposer une grande portion du fog.",
+      copy: "La partie la plus architecturale de la macro-map: tours hautes, portails deformes, routes de siege.",
     },
   ];
 
@@ -103,54 +259,88 @@
     {
       width: 0.75,
       points: [
-        [-12.3, 5.7],
-        [-8.4, 4.5],
-        [-4.2, 2.0],
-        [-1.2, 0.4],
-        [0, 0],
-        [3.2, -1.3],
-        [7.7, -3.4],
-        [12.1, -5.0],
+        [-13.4, 1.0],
+        [-9.0, -1.0],
+        [-4.2, 0.2],
+        [0, 1.2],
+        [4.4, 0.2],
+        [9.5, -1.7],
+        [13.1, -8.6],
       ],
     },
     {
       width: 0.68,
       points: [
-        [-10.7, -5.8],
-        [-6.5, -3.6],
-        [-2.6, -1.4],
-        [0, 0],
-        [3.8, 1.8],
-        [8.4, 4.1],
-        [11.2, 6.5],
+        [-10.1, -11.5],
+        [-7.6, -8.7],
+        [-4.1, -4.3],
+        [0, 1.2],
+        [3.8, 5.2],
+        [9.1, 9.3],
       ],
     },
     {
       width: 0.48,
       points: [
-        [-10.2, 0.0],
-        [-6.4, 0.5],
-        [-2.4, 0.6],
-        [0, 0],
-        [3.3, 0.5],
-        [7.7, 0.0],
-        [11.2, -0.6],
+        [6.4, -9.5],
+        [3.9, -5.4],
+        [0, 1.2],
+        [-1.8, 8.4],
+        [1.8, 12.0],
+      ],
+    },
+    {
+      width: 0.56,
+      points: [
+        [-11.3, -2.4],
+        [-8.2, 0.7],
+        [-3.2, 2.4],
+        [0, 1.2],
+        [3.6, 3.4],
+        [9.1, 9.3],
+      ],
+    },
+    {
+      width: 0.44,
+      points: [
+        [-10.4, 11.2],
+        [-6.7, 12.9],
+        [-1.8, 8.4],
+        [0, 1.2],
+        [6.4, -9.5],
       ],
     },
   ];
 
   const riverPath = [
-    [-11.8, 7.6],
-    [-7.5, 8.4],
-    [-2.3, 7.5],
-    [2.6, 7.8],
-    [6.6, 6.6],
-    [11.4, 6.9],
+    [-15.6, -3.4],
+    [-12.5, -1.2],
+    [-10.8, 2.0],
+    [-8.7, 5.2],
+    [-10.4, 11.2],
   ];
 
   const props = [];
   const labels = new Map();
   const tiles = [];
+  const activePointers = new Map();
+  const pinch = {
+    active: false,
+    lastDistance: 0,
+    lastCenterX: 0,
+    lastCenterY: 0,
+  };
+  const touchGesture = {
+    mode: "none",
+    moved: false,
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastY: 0,
+    lastDistance: 0,
+    lastCenterX: 0,
+    lastCenterY: 0,
+  };
 
   const state = {
     width: 1,
@@ -161,6 +351,7 @@
     offsetY: 0,
     targetOffsetX: 0,
     targetOffsetY: 0,
+    cameraMode: "game",
     selectedId: "rift",
     hoverId: null,
     dragging: false,
@@ -171,12 +362,64 @@
     lastY: 0,
     time: 0,
     paintedMapReady: false,
+    gameplayMapReady: false,
   };
 
   paintedMap.addEventListener("load", () => {
     state.paintedMapReady = true;
+    resetView();
+    focusLandmark(selectedLandmark());
+    updateLabels();
   });
-  paintedMap.src = "./assets/jester-dragon-painted-map.png";
+  paintedMap.src = "./assets/drako-lair-macro-map-v4-retina.webp";
+
+  gameplayMap.addEventListener("load", () => {
+    state.gameplayMapReady = true;
+    resetView();
+    focusLandmark(selectedLandmark());
+    updateLabels();
+  });
+  gameplayMap.src = "./assets/drako-lair-gameplay-view-v2.png";
+
+  function usePaintedAtlas() {
+    return state.paintedMapReady && state.cameraMode === "atlas";
+  }
+
+  function useGameplayScene() {
+    return state.gameplayMapReady && state.cameraMode === "game";
+  }
+
+  function worldToGameplay(x, z) {
+    return {
+      x: ((x + MAP_RX) / (MAP_RX * 2)) * GAMEPLAY_MAP_W,
+      y: ((z + MAP_RZ) / (MAP_RZ * 2)) * GAMEPLAY_MAP_H,
+    };
+  }
+
+  function gameplayToWorld(x, y) {
+    return {
+      x: (x / GAMEPLAY_MAP_W) * MAP_RX * 2 - MAP_RX,
+      z: (y / GAMEPLAY_MAP_H) * MAP_RZ * 2 - MAP_RZ,
+    };
+  }
+
+  function landmarkGameplayPoint(landmark) {
+    if (typeof landmark.sceneX === "number" && typeof landmark.sceneY === "number") {
+      return { x: landmark.sceneX, y: landmark.sceneY };
+    }
+    return worldToGameplay(landmark.x, landmark.z);
+  }
+
+  function gameplayToScreen(x, y, lift) {
+    return {
+      x: state.offsetX + (x - GAMEPLAY_MAP_W * 0.5) * state.scale,
+      y: state.offsetY + (y - GAMEPLAY_MAP_H * 0.5) * state.scale - (lift || 0) * state.scale,
+    };
+  }
+
+  function gameplayCoverScale() {
+    return Math.max(state.width / GAMEPLAY_MAP_W, state.height / GAMEPLAY_MAP_H);
+  }
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -291,7 +534,7 @@
 
   function terrainColor(x, z, h, type) {
     let color = mix(palette.ground, palette.high, clamp(h * 0.42 + 0.28, 0, 0.7));
-    color = mix(color, [50, 35, 61], hash2(x, z) * 0.18);
+    color = mix(color, [50, 35, 61], hash2(x, z) * 0.08);
 
     if (type === "road") {
       color = mix(palette.road, palette.roadLight, hash2(x * 2, z * 2) * 0.32);
@@ -300,8 +543,10 @@
     } else if (type === "rift") {
       color = mix(palette.rift, [81, 19, 117], hash2(x, z) * 0.32);
     } else if (type === "court") {
-      const checker = (Math.round(x) + Math.round(z)) % 2 === 0;
-      color = mix(checker ? palette.court : palette.courtAlt, palette.gold, checker ? 0.06 : 0.02);
+      const distance = Math.hypot(x * 0.72, z * 1.0);
+      const slab = Math.sin(x * 1.15 + z * 0.35) * 0.5 + Math.cos(z * 0.95 - x * 0.2) * 0.5;
+      color = mix(palette.court, palette.courtAlt, 0.26 + slab * 0.16);
+      color = mix(color, palette.gold, distance < 3.8 ? 0.04 : 0.015);
     } else if (type === "dragon") {
       color = mix(palette.dragon, [96, 48, 62], hash2(x, z) * 0.34);
     } else if (type === "grove") {
@@ -312,6 +557,17 @@
   }
 
   function project(x, z, h) {
+    if (usePaintedAtlas()) {
+      const half = PAINTED_MAP_SIZE * 0.5 * state.scale;
+      return {
+        x: state.offsetX + (x / MAP_RX) * half,
+        y: state.offsetY + (z / MAP_RZ) * half - h * 8 * state.scale,
+      };
+    }
+    if (useGameplayScene()) {
+      const point = worldToGameplay(x, z);
+      return gameplayToScreen(point.x, point.y, h * 16);
+    }
     return {
       x: state.offsetX + (x - z) * (TILE_W * 0.5) * state.scale,
       y: state.offsetY + (x + z) * (TILE_H * 0.5) * state.scale - h * HEIGHT * state.scale,
@@ -342,8 +598,12 @@
     const right = project(x + 0.5, z, h);
     const bottom = project(x, z + 0.5, h);
     const left = project(x - 0.5, z, h);
-    const isCliff = tile.edge > 0.82 || h > 0.46;
-    const sideDepth = (isCliff ? 8 + Math.max(0, h) * 8 : 3) * state.scale;
+    const isGameView = state.cameraMode === "game";
+    const courtDistance = Math.hypot(x * 0.72, z * 1.0);
+    const isRaisedGround = isGameView && tile.type === "court" && courtDistance < 5.1;
+    const isCliff = tile.edge > 0.82 || h > 0.46 || isRaisedGround;
+    const sideDepth =
+      (isCliff ? 9 + Math.max(0, h + 0.4) * 12 : tile.type === "road" ? 5 : 3) * state.scale;
     const bottomDrop = { x: bottom.x, y: bottom.y + sideDepth };
     const rightDrop = { x: right.x, y: right.y + sideDepth };
     const leftDrop = { x: left.x, y: left.y + sideDepth };
@@ -354,18 +614,56 @@
       drawPoly([bottom, right, rightDrop, bottomDrop], rgba(shade(color, -0.36), 0.9), null);
     }
 
+    const topFill = ctx.createLinearGradient(top.x, top.y, bottom.x, bottom.y);
+    topFill.addColorStop(0, rgb(shade(color, 0.06)));
+    topFill.addColorStop(0.48, rgb(color));
+    topFill.addColorStop(1, rgb(shade(color, -0.08)));
+
     drawPoly(
       [top, right, bottom, left],
-      rgb(color),
+      topFill,
       rgba(tile.type === "rift" ? palette.riftHot : palette.ink, tile.type === "water" ? 0.04 : 0.028),
       Math.max(0.35, 0.52 * state.scale),
     );
+
+    if (isGameView && tile.type !== "water" && (tile.edge > 0.82 || tile.type === "road" || tile.type === "rift")) {
+      ctx.save();
+      ctx.globalCompositeOperation = "multiply";
+      drawPoly(
+        [left, bottom, right],
+        rgba([5, 2, 8], tile.type === "road" ? 0.08 : 0.045),
+        null,
+      );
+      ctx.restore();
+    }
 
     if (tile.type === "water") {
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
       drawPoly([top, right, bottom, left], rgba(palette.waterHot, 0.09 + Math.sin(state.time + x) * 0.025), null);
       ctx.restore();
+    } else if (isGameView && hash2(x + 4.7, z - 9.1) > 0.48) {
+      const crackA = project(x - 0.28, z - 0.08, h + 0.012);
+      const crackB = project(x + 0.24, z + 0.12, h + 0.012);
+      ctx.save();
+      ctx.strokeStyle = rgba(tile.type === "rift" ? palette.riftHot : palette.ink, tile.type === "road" ? 0.08 : 0.06);
+      ctx.lineWidth = Math.max(0.45, 0.75 * state.scale);
+      ctx.beginPath();
+      ctx.moveTo(crackA.x, crackA.y);
+      ctx.lineTo(crackB.x, crackB.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawTileField() {
+    for (const tile of tiles) {
+      const courtDistance = Math.hypot(tile.x * 0.72, tile.z * 1.0);
+      const structural =
+        courtDistance < 5.8 ||
+        tile.edge > 0.83 ||
+        tile.type === "rift";
+      if (structural) drawTile(tile);
     }
   }
 
@@ -509,37 +807,63 @@
     }
   }
 
+  function drawGameCourtDetails() {
+    drawEllipseRing(0, 0, 2.95, 2.05, palette.gold, 0.2);
+    drawEllipseRing(0, 0, 1.72, 1.18, palette.riftHot, 0.18);
+
+    const spokes = [
+      [
+        [-2.3, -0.95],
+        [-0.9, -0.28],
+        [0.1, 0.95],
+      ],
+      [
+        [2.25, -0.75],
+        [0.92, -0.1],
+        [0.1, 0.92],
+      ],
+      [
+        [-1.95, 1.45],
+        [-0.82, 0.8],
+        [0.05, 0.5],
+      ],
+    ];
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (const spoke of spokes) {
+      drawIsoStroke(spoke, 9, palette.riftHot, 0.16, 0.3);
+      drawIsoStroke(spoke, 2.2, palette.acid, 0.22, 0.34);
+    }
+    ctx.restore();
+  }
+
   function drawWorldBase() {
     drawCliffFacets();
     drawMapSilhouette();
     drawTerrainPatches();
+    drawTileField();
     drawTerrainBrushwork();
     drawCentralCraterWalls();
+    drawGameCourtDetails();
   }
 
   function drawPaintedMapLayer() {
     const center = project(0, 0, -0.06);
-    const backingSize = 2300 * state.scale;
-    const backingX = center.x - backingSize * 0.5;
-    const backingY = center.y - backingSize * 0.5;
-    const size = 1480 * state.scale;
+    const size = PAINTED_MAP_SIZE * state.scale;
     const x = center.x - size * 0.5;
     const y = center.y - size * 0.5;
 
     ctx.save();
-    ctx.globalAlpha = 0.86;
-    ctx.filter = `blur(${Math.max(3, 8 * state.scale)}px) saturate(0.86) brightness(0.72)`;
-    ctx.drawImage(paintedMap, backingX, backingY, backingSize, backingSize);
-    ctx.restore();
-
-    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.shadowColor = "rgba(0, 0, 0, 0.55)";
-    ctx.shadowBlur = 34 * state.scale;
-    ctx.shadowOffsetY = 18 * state.scale;
+    ctx.shadowBlur = 18 * state.scale;
+    ctx.shadowOffsetY = 10 * state.scale;
     ctx.drawImage(paintedMap, x, y, size, size);
     ctx.restore();
 
-    const vignette = ctx.createRadialGradient(center.x, center.y, 120 * state.scale, center.x, center.y, 820 * state.scale);
+    const vignette = ctx.createRadialGradient(center.x, center.y, 120 * state.scale, center.x, center.y, 1260 * state.scale);
     vignette.addColorStop(0, "rgba(42, 12, 75, 0.03)");
     vignette.addColorStop(0.62, "rgba(6, 3, 12, 0)");
     vignette.addColorStop(1, "rgba(2, 1, 5, 0.44)");
@@ -557,18 +881,128 @@
     ctx.restore();
   }
 
+  function drawGameplayMapLayer() {
+    const w = GAMEPLAY_MAP_W * state.scale;
+    const h = GAMEPLAY_MAP_H * state.scale;
+    const x = state.offsetX - w * 0.5;
+    const y = state.offsetY - h * 0.5;
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.shadowColor = "rgba(0, 0, 0, 0.42)";
+    ctx.shadowBlur = 20 * state.scale;
+    ctx.drawImage(gameplayMap, x, y, w, h);
+    ctx.restore();
+
+    drawGameplayRiftEffects();
+    drawGameplayDepthMotes();
+  }
+
+  function drawGameplayRiftEffects() {
+    const center = gameplayToScreen(1030, 420, 0);
+    const pulse = 0.5 + Math.sin(state.time * 1.8) * 0.5;
+    const rx = (168 + pulse * 18) * state.scale;
+    const ry = (92 + pulse * 8) * state.scale;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const glow = ctx.createRadialGradient(center.x, center.y, 8 * state.scale, center.x, center.y, rx * 1.35);
+    glow.addColorStop(0, rgba(palette.riftHot, 0.2));
+    glow.addColorStop(0.45, rgba([91, 20, 142], 0.11));
+    glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.ellipse(center.x, center.y, rx * 1.15, ry * 1.2, -0.08, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.lineCap = "round";
+    for (let i = 0; i < 16; i += 1) {
+      const angle = i * 2.399 + state.time * 0.28;
+      const inner = 24 + hash(i) * 42;
+      const outer = 92 + hash(i + 10) * 92;
+      ctx.strokeStyle = rgba(i % 3 === 0 ? palette.acid : palette.riftHot, 0.07 + hash(i + 7) * 0.08);
+      ctx.lineWidth = (1.2 + hash(i + 2) * 2.8) * state.scale;
+      ctx.beginPath();
+      ctx.moveTo(center.x + Math.cos(angle) * inner * state.scale, center.y + Math.sin(angle) * inner * 0.55 * state.scale);
+      ctx.bezierCurveTo(
+        center.x + Math.cos(angle + 0.7) * outer * 0.55 * state.scale,
+        center.y + Math.sin(angle + 0.7) * outer * 0.33 * state.scale,
+        center.x + Math.cos(angle + 1.4) * outer * 0.82 * state.scale,
+        center.y + Math.sin(angle + 1.4) * outer * 0.5 * state.scale,
+        center.x + Math.cos(angle + 1.9) * outer * state.scale,
+        center.y + Math.sin(angle + 1.9) * outer * 0.55 * state.scale,
+      );
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawGameplayDepthMotes() {
+    const anchors = [
+      [650, 330, palette.acid],
+      [840, 560, palette.riftHot],
+      [1170, 520, palette.acid],
+      [1285, 710, palette.acid],
+      [450, 610, palette.riftHot],
+      [1010, 840, palette.riftHot],
+    ];
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 34; i += 1) {
+      const anchor = anchors[i % anchors.length];
+      const driftX = Math.sin(state.time * (0.8 + hash(i) * 0.8) + i) * (18 + hash(i + 2) * 32);
+      const driftY = Math.cos(state.time * (0.6 + hash(i + 4) * 0.7) + i * 1.7) * (9 + hash(i + 6) * 18);
+      const point = gameplayToScreen(anchor[0] + driftX + (hash(i + 8) - 0.5) * 160, anchor[1] + driftY + (hash(i + 10) - 0.5) * 80, 0);
+      const r = (1.1 + hash(i + 12) * 2.2) * state.scale;
+      ctx.fillStyle = rgba(anchor[2], 0.12 + hash(i + 13) * 0.16);
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function clampPaintedCamera() {
-    if (!state.paintedMapReady) return;
-    const half = 740 * state.scale;
+    if (!usePaintedAtlas()) return;
+    const half = PAINTED_MAP_SIZE * 0.5 * state.scale;
     if (half <= 0) return;
-    const minX = state.width - half - 28;
-    const maxX = half + 28;
-    const minY = state.height - half - 42;
-    const maxY = half + 42;
+    const padding = state.cameraMode === "game" ? Math.max(state.width, state.height) * 0.38 : 36;
+    const minX = state.width - half - padding;
+    const maxX = half + padding;
+    const minY = state.height - half - padding;
+    const maxY = half + padding;
     state.targetOffsetX = clamp(state.targetOffsetX, minX, maxX);
     state.targetOffsetY = clamp(state.targetOffsetY, minY, maxY);
     state.offsetX = clamp(state.offsetX, minX, maxX);
     state.offsetY = clamp(state.offsetY, minY, maxY);
+  }
+
+  function clampGameplayCamera() {
+    if (!useGameplayScene()) return;
+    const halfW = GAMEPLAY_MAP_W * 0.5 * state.scale;
+    const halfH = GAMEPLAY_MAP_H * 0.5 * state.scale;
+
+    if (halfW <= state.width * 0.5) {
+      state.targetOffsetX = state.width * 0.5;
+      state.offsetX = state.width * 0.5;
+    } else {
+      const minX = state.width - halfW;
+      const maxX = halfW;
+      state.targetOffsetX = clamp(state.targetOffsetX, minX, maxX);
+      state.offsetX = clamp(state.offsetX, minX, maxX);
+    }
+
+    if (halfH <= state.height * 0.5) {
+      state.targetOffsetY = state.height * 0.5;
+      state.offsetY = state.height * 0.5;
+    } else {
+      const minY = state.height - halfH;
+      const maxY = halfH;
+      state.targetOffsetY = clamp(state.targetOffsetY, minY, maxY);
+      state.offsetY = clamp(state.offsetY, minY, maxY);
+    }
   }
 
   function samplePath(points, samplesPerSegment) {
@@ -604,10 +1038,11 @@
 
   function routeForLandmark(landmark) {
     if (!landmark || landmark.id === "rift") return null;
-    const bendX = landmark.x * 0.42 + Math.sin(landmark.z) * 0.7;
-    const bendZ = landmark.z * 0.42 + Math.cos(landmark.x) * 0.45;
+    const origin = landmarks[0];
+    const bendX = origin.x + (landmark.x - origin.x) * 0.46 + Math.sin(landmark.z) * 0.55;
+    const bendZ = origin.z + (landmark.z - origin.z) * 0.46 + Math.cos(landmark.x) * 0.42;
     return [
-      [0, 0],
+      [origin.x, origin.z],
       [bendX, bendZ],
       [landmark.x, landmark.z],
     ];
@@ -728,21 +1163,23 @@
     const s = state.scale * scale;
     drawShadow({ x: base.x, y: base.y + 7 * s }, 34 * s, 14 * s, 0.32);
 
-    const body = [
-      { x: base.x - 18 * s, y: base.y - 4 * s },
-      { x: base.x + 18 * s, y: base.y - 4 * s },
-      { x: base.x + 12 * s, y: base.y - 60 * s },
-      { x: base.x - 12 * s, y: base.y - 60 * s },
-    ];
-    drawPoly(body, rgb(shade(color, -0.04)), rgba(accent, 0.25), Math.max(1, state.scale));
+    const footL = { x: base.x - 20 * s, y: base.y - 2 * s };
+    const footR = { x: base.x + 20 * s, y: base.y - 2 * s };
+    const midL = { x: base.x - 12 * s, y: base.y - 58 * s };
+    const midR = { x: base.x + 12 * s, y: base.y - 58 * s };
+    const spine = { x: base.x, y: base.y - 72 * s };
+    drawPoly([footL, { x: base.x, y: base.y + 4 * s }, spine, midL], rgba(shade(color, -0.2), 0.96), null);
+    drawPoly([footR, { x: base.x, y: base.y + 4 * s }, spine, midR], rgba(shade(color, -0.34), 0.96), null);
+    drawPoly([midL, spine, midR, { x: base.x, y: base.y - 46 * s }], rgba(shade(color, 0.08), 0.96), rgba(accent, 0.22), Math.max(1, state.scale));
 
     drawPoly(
       [
-        { x: base.x - 24 * s, y: base.y - 58 * s },
-        { x: base.x + 24 * s, y: base.y - 58 * s },
-        { x: base.x, y: base.y - 96 * s },
+        { x: base.x - 23 * s, y: base.y - 58 * s },
+        { x: base.x + 22 * s, y: base.y - 58 * s },
+        { x: base.x + 4 * s, y: base.y - 104 * s },
+        { x: base.x - 5 * s, y: base.y - 94 * s },
       ],
-      rgb(shade(accent, -0.08)),
+      rgba(shade(accent, -0.12), 0.92),
       rgba(palette.ink, 0.18),
       Math.max(1, state.scale),
     );
@@ -788,21 +1225,41 @@
     const h = terrainHeight(x, z);
     const base = project(x, z, h + 0.06);
     const s = state.scale * scale;
-    drawShadow({ x: base.x, y: base.y + 4 * s }, 18 * s, 8 * s, 0.2);
-    ctx.strokeStyle = rgba([69, 43, 31], 0.95);
-    ctx.lineWidth = Math.max(1, 5 * s);
+    drawShadow({ x: base.x, y: base.y + 5 * s }, 22 * s, 9 * s, 0.24);
+    ctx.strokeStyle = rgba([39, 24, 28], 0.95);
+    ctx.lineWidth = Math.max(1, 4.2 * s);
     ctx.beginPath();
     ctx.moveTo(base.x, base.y);
-    ctx.lineTo(base.x + 2 * s, base.y - 32 * s);
+    ctx.lineTo(base.x + 2 * s, base.y - 34 * s);
     ctx.stroke();
+    ctx.strokeStyle = rgba(palette.acid, 0.18);
+    ctx.lineWidth = Math.max(0.7, 1.2 * s);
+    ctx.beginPath();
+    ctx.moveTo(base.x + 2 * s, base.y - 22 * s);
+    ctx.lineTo(base.x - 14 * s, base.y - 35 * s);
+    ctx.moveTo(base.x + 1 * s, base.y - 28 * s);
+    ctx.lineTo(base.x + 16 * s, base.y - 45 * s);
+    ctx.stroke();
+    const foliage = mix(palette.grove, [58, 83, 61], 0.55 + hash2(x, z) * 0.18);
     drawPoly(
       [
-        { x: base.x, y: base.y - 62 * s },
-        { x: base.x + 22 * s, y: base.y - 24 * s },
-        { x: base.x - 20 * s, y: base.y - 20 * s },
+        { x: base.x - 8 * s, y: base.y - 66 * s },
+        { x: base.x + 24 * s, y: base.y - 31 * s },
+        { x: base.x + 3 * s, y: base.y - 19 * s },
+        { x: base.x - 24 * s, y: base.y - 25 * s },
       ],
-      rgb(mix(palette.grove, palette.acid, 0.16 + hash2(x, z) * 0.18)),
-      rgba(palette.ink, 0.06),
+      rgba(foliage, 0.94),
+      rgba(palette.acid, 0.08),
+      Math.max(0.7, state.scale * 0.7),
+    );
+    drawPoly(
+      [
+        { x: base.x + 4 * s, y: base.y - 58 * s },
+        { x: base.x + 18 * s, y: base.y - 33 * s },
+        { x: base.x + 2 * s, y: base.y - 24 * s },
+      ],
+      rgba(shade(foliage, -0.28), 0.72),
+      null,
       Math.max(0.7, state.scale * 0.7),
     );
   }
@@ -918,7 +1375,7 @@
     const h = terrainHeight(x, z);
     const base = project(x, z, h + 0.22);
     const s = state.scale * scale;
-    drawShadow({ x: base.x, y: base.y + 9 * s }, 42 * s, 16 * s, 0.34);
+    drawShadow({ x: base.x, y: base.y + 9 * s }, 38 * s, 15 * s, 0.36);
     ctx.save();
     ctx.translate(base.x, base.y - 38 * s);
     ctx.scale(s, s);
@@ -929,17 +1386,20 @@
     ctx.bezierCurveTo(2, 10, 5, 32, 18, 24);
     ctx.bezierCurveTo(48, 4, 38, -30, 0, -32);
     ctx.closePath();
-    ctx.fillStyle = rgba([31, 17, 45], 0.96);
+    ctx.fillStyle = rgba([22, 14, 31], 0.94);
     ctx.fill();
-    ctx.strokeStyle = rgba(palette.gold, 0.72);
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = rgba(palette.gold, 0.46);
+    ctx.lineWidth = 2.4;
     ctx.stroke();
-    ctx.fillStyle = rgba(palette.riftHot, 0.76);
+    ctx.strokeStyle = rgba(palette.ink, 0.08);
+    ctx.lineWidth = 5.5;
+    ctx.stroke();
+    ctx.fillStyle = rgba(palette.riftHot, 0.5);
     ctx.beginPath();
-    ctx.ellipse(-15, -4, 8, 4, -0.25, 0, Math.PI * 2);
-    ctx.ellipse(15, -4, 8, 4, 0.25, 0, Math.PI * 2);
+    ctx.ellipse(-15, -4, 7, 3.5, -0.25, 0, Math.PI * 2);
+    ctx.ellipse(15, -4, 7, 3.5, 0.25, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = rgba(palette.acid, 0.78);
+    ctx.fillStyle = rgba(palette.acid, 0.58);
     ctx.beginPath();
     ctx.arc(-36, -28, 4, 0, Math.PI * 2);
     ctx.arc(36, -28, 4, 0, Math.PI * 2);
@@ -1015,8 +1475,10 @@
 
   function drawMarker(landmark) {
     const h = terrainHeight(landmark.x, landmark.z);
-    const base = project(landmark.x, landmark.z, h + 0.14);
-    const s = state.scale * landmark.scale;
+    const base = useGameplayScene()
+      ? gameplayToScreen(landmarkGameplayPoint(landmark).x, landmarkGameplayPoint(landmark).y, 22 * landmark.scale)
+      : project(landmark.x, landmark.z, h + 0.14);
+    const s = state.scale * landmark.scale * (useGameplayScene() ? 0.72 : 1);
     const selected = landmark.id === state.selectedId;
     const hovered = landmark.id === state.hoverId;
     const pulse = 0.5 + Math.sin(state.time * 2.2) * 0.5;
@@ -1028,6 +1490,14 @@
     ctx.ellipse(base.x, base.y + 3 * s, (28 + pulse * (selected || hovered ? 10 : 8)) * s, (12 + pulse * 3) * s, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
+  }
+
+  function shouldDrawSceneMarker(landmark) {
+    if (usePaintedAtlas() || state.cameraMode !== "game") return true;
+    if (landmark.id === state.selectedId || landmark.id === state.hoverId) return true;
+    const view = currentViewWorld();
+    const distance = Math.hypot(landmark.x - view.x, landmark.z - view.z);
+    return state.scale > 1.7 && distance < 3.8;
   }
 
   function buildTiles() {
@@ -1083,6 +1553,16 @@
       addProp("pillar", Math.cos(a) * r, Math.sin(a) * r * 0.76, 0.52 + hash(i + 42) * 0.42);
     }
 
+    for (let i = 0; i < 18; i += 1) {
+      const a = (i / 18) * Math.PI * 2 + hash(i + 130) * 0.18;
+      const r = 3.05 + hash(i + 131) * 0.75;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r * 0.72;
+      if (i % 3 === 0) addProp("spire", x, z, 0.56 + hash(i + 132) * 0.34, { color: [46, 28, 62], accent: palette.gold });
+      else if (i % 3 === 1) addProp("banner", x, z, 0.48 + hash(i + 133) * 0.3, { flip: hash(i + 134) > 0.5 });
+      else addProp("rock", x, z, 0.58 + hash(i + 135) * 0.34);
+    }
+
     for (let i = 0; i < 16; i += 1) {
       const a = i * 2.399;
       const r = 0.7 + hash(i + 61) * 2.4;
@@ -1090,7 +1570,9 @@
     }
 
     addProp("spire", -7.2, -4.8, 1.08, { color: palette.court, accent: palette.gold });
-    addProp("mask", -6.4, -4.1, 0.78);
+    addProp("mask", -6.4, -4.1, 0.48);
+    addProp("mask", -1.35, 0.45, 0.4);
+    addProp("mask", 1.45, 0.35, 0.38);
     addProp("dragon", 7.4, -4.9, 0.9, { flip: true });
     addProp("dragon", 2.2, -8.0, 0.74, { flip: false });
     addProp("spire", 2.2, -8.0, 0.96, { color: [46, 26, 64], accent: palette.riftHot });
@@ -1198,6 +1680,22 @@
   }
 
   function currentViewWorld() {
+    if (usePaintedAtlas()) {
+      const half = PAINTED_MAP_SIZE * 0.5 * state.scale;
+      return {
+        x: clamp(((state.width * 0.5 - state.offsetX) / half) * MAP_RX, -MAP_RX, MAP_RX),
+        z: clamp(((state.height * 0.5 - state.offsetY) / half) * MAP_RZ, -MAP_RZ, MAP_RZ),
+      };
+    }
+    if (useGameplayScene()) {
+      const x = GAMEPLAY_MAP_W * 0.5 + (state.width * 0.5 - state.offsetX) / state.scale;
+      const y = GAMEPLAY_MAP_H * 0.5 + (state.height * 0.5 - state.offsetY) / state.scale;
+      const world = gameplayToWorld(x, y);
+      return {
+        x: clamp(world.x, -MAP_RX, MAP_RX),
+        z: clamp(world.z, -MAP_RZ, MAP_RZ),
+      };
+    }
     const a = (state.width * 0.5 - state.offsetX) / ((TILE_W * 0.5) * state.scale);
     const b = (state.height * 0.5 - state.offsetY) / ((TILE_H * 0.5) * state.scale);
     return {
@@ -1212,13 +1710,24 @@
     miniCtx.fillRect(0, 0, miniCanvas.width, miniCanvas.height);
 
     const center = miniProject(0, 0);
-    miniCtx.fillStyle = "rgba(55, 37, 74, 0.82)";
+    if (state.paintedMapReady) {
+      miniCtx.save();
+      miniCtx.globalAlpha = 0.5;
+      miniCtx.drawImage(paintedMap, 8, 8, miniCanvas.width - 16, miniCanvas.height - 16);
+      miniCtx.restore();
+    } else {
+      miniCtx.fillStyle = "rgba(55, 37, 74, 0.82)";
+      miniCtx.strokeStyle = "rgba(218, 184, 255, 0.18)";
+      miniCtx.lineWidth = 1.2;
+      miniCtx.beginPath();
+      miniCtx.ellipse(center.x, center.y, 104, 60, 0, 0, Math.PI * 2);
+      miniCtx.fill();
+      miniCtx.stroke();
+    }
+
     miniCtx.strokeStyle = "rgba(218, 184, 255, 0.18)";
     miniCtx.lineWidth = 1.2;
-    miniCtx.beginPath();
-    miniCtx.ellipse(center.x, center.y, 104, 60, 0, 0, Math.PI * 2);
-    miniCtx.fill();
-    miniCtx.stroke();
+    miniCtx.strokeRect(8, 8, miniCanvas.width - 16, miniCanvas.height - 16);
 
     drawMiniPath(riverPath, 9, palette.waterHot, 0.28);
     for (const road of roadPaths) drawMiniPath(road.points, 3.5, palette.roadLight, 0.7);
@@ -1257,27 +1766,34 @@
     state.offsetX += (state.targetOffsetX - state.offsetX) * 0.1;
     state.offsetY += (state.targetOffsetY - state.offsetY) * 0.1;
     clampPaintedCamera();
+    clampGameplayCamera();
 
     renderBackground();
 
-    if (state.paintedMapReady) {
+    const paintedAtlas = usePaintedAtlas();
+    const gameplayScene = useGameplayScene();
+    if (paintedAtlas) {
       drawPaintedMapLayer();
+    } else if (gameplayScene) {
+      drawGameplayMapLayer();
     } else {
       drawWorldBase();
       drawRiver();
       drawRoads();
     }
-    drawSelectedRoute();
+    if (!gameplayScene) drawSelectedRoute();
 
-    if (!state.paintedMapReady) {
+    if (!paintedAtlas && !gameplayScene) {
       drawEllipseRing(0, 0, 2.75, 1.95, palette.gold, 0.26);
       drawRift();
     }
 
-    if (!state.paintedMapReady) {
+    if (!paintedAtlas && !gameplayScene) {
       for (const prop of props) drawProp(prop);
     }
-    for (const landmark of landmarks) drawMarker(landmark);
+    for (const landmark of landmarks) {
+      if (shouldDrawSceneMarker(landmark)) drawMarker(landmark);
+    }
     drawForegroundVeil();
     updateLabels();
     drawMiniMap();
@@ -1293,6 +1809,7 @@
     const landmark = selectedLandmark();
     ui.name.textContent = landmark.name;
     ui.type.textContent = landmark.type;
+    ui.effect.textContent = landmark.effect || "";
     ui.copy.textContent = landmark.copy;
     for (const item of landmarks) {
       const label = labels.get(item.id);
@@ -1301,9 +1818,29 @@
   }
 
   function focusLandmark(landmark) {
+    if (usePaintedAtlas()) {
+      const half = PAINTED_MAP_SIZE * 0.5 * state.scale;
+      const targetX = state.cameraMode === "game" ? state.width * 0.48 : state.width * 0.5;
+      const targetY = state.cameraMode === "game" ? state.height * 0.58 : state.height * 0.5;
+      state.targetOffsetX = targetX - (landmark.x / MAP_RX) * half;
+      state.targetOffsetY = targetY - (landmark.z / MAP_RZ) * half;
+      clampPaintedCamera();
+      return;
+    }
+    if (useGameplayScene()) {
+      const point = landmarkGameplayPoint(landmark);
+      const targetX = state.width * 0.52;
+      const targetY = state.height * 0.42;
+      state.targetOffsetX = targetX - (point.x - GAMEPLAY_MAP_W * 0.5) * state.scale;
+      state.targetOffsetY = targetY - (point.y - GAMEPLAY_MAP_H * 0.5) * state.scale;
+      clampGameplayCamera();
+      return;
+    }
     const h = terrainHeight(landmark.x, landmark.z);
-    state.targetOffsetX = state.width * 0.5 - (landmark.x - landmark.z) * (TILE_W * 0.5) * state.scale;
-    state.targetOffsetY = state.height * 0.52 - (landmark.x + landmark.z) * (TILE_H * 0.5) * state.scale + h * HEIGHT * state.scale;
+    const targetX = state.cameraMode === "game" ? state.width * 0.52 : state.width * 0.5;
+    const targetY = state.cameraMode === "game" ? state.height * 0.48 : state.height * 0.52;
+    state.targetOffsetX = targetX - (landmark.x - landmark.z) * (TILE_W * 0.5) * state.scale;
+    state.targetOffsetY = targetY - (landmark.x + landmark.z) * (TILE_H * 0.5) * state.scale + h * HEIGHT * state.scale;
   }
 
   function selectLandmark(id, shouldFocus) {
@@ -1319,11 +1856,34 @@
   }
 
   function resetView() {
-    state.scale = Math.min(1.05, Math.max(0.78, state.width / 1240));
+    if (useGameplayScene()) {
+      state.scale = Math.min(1.14, Math.max(0.76, gameplayCoverScale() * 1.08));
+    } else if (state.cameraMode === "game") {
+      const shortSide = Math.min(state.width, state.height);
+      state.scale = Math.min(1.36, Math.max(1.04, shortSide / 340));
+    } else {
+      state.scale = Math.min(0.74, Math.max(0.48, state.width / 1760));
+    }
     state.offsetX = state.width * 0.5;
-    state.offsetY = state.height * 0.29;
+    state.offsetY = state.cameraMode === "game" ? state.height * 0.38 : state.height * 0.5;
     state.targetOffsetX = state.offsetX;
     state.targetOffsetY = state.offsetY;
+  }
+
+  function updateCameraButton() {
+    if (!ui.camera) return;
+    ui.camera.textContent = state.cameraMode === "game" ? "Atlas" : "Vue jeu";
+    ui.camera.title = state.cameraMode === "game" ? "Passer en atlas" : "Passer en vue jeu";
+    ui.camera.setAttribute("aria-label", state.cameraMode === "game" ? "Passer en atlas" : "Passer en vue jeu");
+    document.body.dataset.camera = state.cameraMode;
+  }
+
+  function toggleCameraMode() {
+    state.cameraMode = state.cameraMode === "game" ? "atlas" : "game";
+    updateCameraButton();
+    resetView();
+    focusLandmark(selectedLandmark());
+    updateLabels();
   }
 
   function pointerToCanvas(event) {
@@ -1334,12 +1894,178 @@
     };
   }
 
+  function zoomAt(point, nextScale) {
+    const oldScale = state.scale;
+    const minScale = useGameplayScene() ? gameplayCoverScale() : state.cameraMode === "game" ? 0.52 : 0.38;
+    const maxScale = useGameplayScene() ? 2.08 : state.cameraMode === "game" ? 2.45 : 1.35;
+    state.scale = clamp(nextScale, minScale, maxScale);
+    const ratio = state.scale / oldScale;
+    state.offsetX = point.x - (point.x - state.offsetX) * ratio;
+    state.offsetY = point.y - (point.y - state.offsetY) * ratio;
+    state.targetOffsetX = state.offsetX;
+    state.targetOffsetY = state.offsetY;
+    clampPaintedCamera();
+    clampGameplayCamera();
+    updateLabels();
+  }
+
+  function pointerPair() {
+    const points = Array.from(activePointers.values());
+    return points.length >= 2 ? [points[0], points[1]] : null;
+  }
+
+  function pinchMetrics() {
+    const pair = pointerPair();
+    if (!pair) return null;
+    const [a, b] = pair;
+    return {
+      distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+      center: {
+        x: (a.x + b.x) * 0.5,
+        y: (a.y + b.y) * 0.5,
+      },
+    };
+  }
+
+  function beginPinch() {
+    const metrics = pinchMetrics();
+    if (!metrics) return;
+    pinch.active = true;
+    pinch.lastDistance = metrics.distance;
+    pinch.lastCenterX = metrics.center.x;
+    pinch.lastCenterY = metrics.center.y;
+    state.dragging = false;
+    state.moved = true;
+  }
+
+  function updatePinch() {
+    const metrics = pinchMetrics();
+    if (!metrics) return;
+    if (!pinch.active) beginPinch();
+    state.offsetX += metrics.center.x - pinch.lastCenterX;
+    state.offsetY += metrics.center.y - pinch.lastCenterY;
+    state.targetOffsetX = state.offsetX;
+    state.targetOffsetY = state.offsetY;
+    zoomAt(metrics.center, state.scale * (metrics.distance / pinch.lastDistance));
+    pinch.lastDistance = metrics.distance;
+    pinch.lastCenterX = metrics.center.x;
+    pinch.lastCenterY = metrics.center.y;
+  }
+
+  function resumeDragAfterPinch() {
+    pinch.active = false;
+    if (activePointers.size !== 1) {
+      state.dragging = false;
+      return;
+    }
+    const point = Array.from(activePointers.values())[0];
+    state.dragging = true;
+    state.moved = true;
+    state.pointerStartX = point.x;
+    state.pointerStartY = point.y;
+    state.lastX = point.x;
+    state.lastY = point.y;
+  }
+
+  function touchToCanvas(touch) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    };
+  }
+
+  function touchMetrics(touches) {
+    if (touches.length < 2) return null;
+    const a = touchToCanvas(touches[0]);
+    const b = touchToCanvas(touches[1]);
+    return {
+      distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+      center: {
+        x: (a.x + b.x) * 0.5,
+        y: (a.y + b.y) * 0.5,
+      },
+    };
+  }
+
+  function beginTouchPan(touch) {
+    const point = touchToCanvas(touch);
+    touchGesture.mode = "pan";
+    touchGesture.moved = false;
+    touchGesture.startX = point.x;
+    touchGesture.startY = point.y;
+    touchGesture.lastX = point.x;
+    touchGesture.lastY = point.y;
+    state.dragging = true;
+    state.moved = false;
+  }
+
+  function beginTouchPinch(touches) {
+    const metrics = touchMetrics(touches);
+    if (!metrics) return;
+    touchGesture.mode = "pinch";
+    touchGesture.moved = true;
+    touchGesture.lastDistance = metrics.distance;
+    touchGesture.lastCenterX = metrics.center.x;
+    touchGesture.lastCenterY = metrics.center.y;
+    state.dragging = false;
+    state.moved = true;
+  }
+
+  function updateTouchPan(touch) {
+    const point = touchToCanvas(touch);
+    const dx = point.x - touchGesture.lastX;
+    const dy = point.y - touchGesture.lastY;
+    if (Math.hypot(point.x - touchGesture.startX, point.y - touchGesture.startY) > 6) {
+      touchGesture.moved = true;
+      state.moved = true;
+    }
+    state.offsetX += dx;
+    state.offsetY += dy;
+    state.targetOffsetX = state.offsetX;
+    state.targetOffsetY = state.offsetY;
+    clampPaintedCamera();
+    clampGameplayCamera();
+    touchGesture.lastX = point.x;
+    touchGesture.lastY = point.y;
+  }
+
+  function updateTouchPinch(touches) {
+    const metrics = touchMetrics(touches);
+    if (!metrics) return;
+    if (touchGesture.mode !== "pinch") beginTouchPinch(touches);
+    state.offsetX += metrics.center.x - touchGesture.lastCenterX;
+    state.offsetY += metrics.center.y - touchGesture.lastCenterY;
+    state.targetOffsetX = state.offsetX;
+    state.targetOffsetY = state.offsetY;
+    zoomAt(metrics.center, state.scale * (metrics.distance / touchGesture.lastDistance));
+    touchGesture.lastDistance = metrics.distance;
+    touchGesture.lastCenterX = metrics.center.x;
+    touchGesture.lastCenterY = metrics.center.y;
+  }
+
+  function resetTouchGesture() {
+    touchGesture.mode = "none";
+    touchGesture.moved = false;
+    state.dragging = false;
+  }
+
+  function resetInputState() {
+    activePointers.clear();
+    pinch.active = false;
+    resetTouchGesture();
+    state.hoverId = null;
+    canvas.style.cursor = "grab";
+  }
+
   function pickLandmark(x, y) {
     let best = null;
     let bestDistance = 52 * state.scale;
     for (const landmark of landmarks) {
       const h = terrainHeight(landmark.x, landmark.z);
-      const p = project(landmark.x, landmark.z, h + 0.5);
+      const p = useGameplayScene()
+        ? gameplayToScreen(landmarkGameplayPoint(landmark).x, landmarkGameplayPoint(landmark).y, 18 * landmark.scale)
+        : project(landmark.x, landmark.z, h + 0.5);
       const distance = Math.hypot(x - p.x, y - p.y);
       if (distance < bestDistance) {
         bestDistance = distance;
@@ -1363,16 +2089,24 @@
   }
 
   function updateLabels() {
+    const view = currentViewWorld();
     for (const landmark of landmarks) {
       const h = terrainHeight(landmark.x, landmark.z);
-      const p = project(landmark.x, landmark.z, h + 1.35 * landmark.scale);
+      const p = useGameplayScene()
+        ? gameplayToScreen(landmarkGameplayPoint(landmark).x, landmarkGameplayPoint(landmark).y, 58 * landmark.scale)
+        : project(landmark.x, landmark.z, h + 1.35 * landmark.scale);
       const label = labels.get(landmark.id);
       if (!label) continue;
+      const selected = landmark.id === state.selectedId;
+      const hovered = landmark.id === state.hoverId;
+      const onScreen = p.x > -80 && p.x < state.width + 80 && p.y > -80 && p.y < state.height + 80;
+      const nearCamera = Math.hypot(landmark.x - view.x, landmark.z - view.z) < 4.2;
+      const visibleByMode = state.cameraMode === "atlas" || selected || hovered || (state.scale > 1.58 && nearCamera);
       label.style.left = `${p.x}px`;
       label.style.top = `${p.y}px`;
-      label.classList.toggle("visible", p.x > -80 && p.x < state.width + 80 && p.y > -80 && p.y < state.height + 80);
-      label.classList.toggle("selected", landmark.id === state.selectedId);
-      label.classList.toggle("hovered", landmark.id === state.hoverId);
+      label.classList.toggle("visible", onScreen && visibleByMode);
+      label.classList.toggle("selected", selected);
+      label.classList.toggle("hovered", hovered);
     }
   }
 
@@ -1401,7 +2135,9 @@
   }
 
   canvas.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch") return;
     const point = pointerToCanvas(event);
+    activePointers.set(event.pointerId, point);
     state.dragging = true;
     state.moved = false;
     state.pointerStartX = point.x;
@@ -1409,10 +2145,19 @@
     state.lastX = point.x;
     state.lastY = point.y;
     canvas.setPointerCapture(event.pointerId);
+    if (activePointers.size >= 2) beginPinch();
   });
 
   canvas.addEventListener("pointermove", (event) => {
+    if (event.pointerType === "touch") return;
     const point = pointerToCanvas(event);
+    if (activePointers.has(event.pointerId)) {
+      activePointers.set(event.pointerId, point);
+      if (activePointers.size >= 2) {
+        updatePinch();
+        return;
+      }
+    }
     if (!state.dragging) {
       const hit = pickLandmark(point.x, point.y);
       state.hoverId = hit ? hit.id : null;
@@ -1426,37 +2171,90 @@
     state.offsetY += dy;
     state.targetOffsetX = state.offsetX;
     state.targetOffsetY = state.offsetY;
+    clampGameplayCamera();
     state.lastX = point.x;
     state.lastY = point.y;
   });
 
-  canvas.addEventListener("pointerleave", () => {
-    state.hoverId = null;
-    state.dragging = false;
-    canvas.style.cursor = "grab";
+  canvas.addEventListener("pointerleave", (event) => {
+    if (event.pointerType === "touch") return;
+    if (!activePointers.has(event.pointerId)) {
+      state.hoverId = null;
+      canvas.style.cursor = "grab";
+    }
   });
 
-  canvas.addEventListener("pointerup", (event) => {
+  function endPointer(event, shouldSelect) {
+    if (event.pointerType === "touch") return;
     const point = pointerToCanvas(event);
+    const wasPinching = pinch.active || activePointers.size >= 2;
+    activePointers.delete(event.pointerId);
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    if (wasPinching) {
+      resumeDragAfterPinch();
+      return;
+    }
     state.dragging = false;
-    if (!state.moved) {
+    if (shouldSelect && !state.moved) {
       const hit = pickLandmark(point.x, point.y);
       if (hit) selectLandmark(hit.id, true);
     }
+  }
+
+  canvas.addEventListener("pointerup", (event) => {
+    endPointer(event, true);
   });
+
+  canvas.addEventListener("pointercancel", (event) => {
+    endPointer(event, false);
+  });
+
+  canvas.addEventListener("touchstart", (event) => {
+    event.preventDefault();
+    if (event.touches.length >= 2) {
+      beginTouchPinch(event.touches);
+      return;
+    }
+    if (event.touches.length === 1) beginTouchPan(event.touches[0]);
+  }, { passive: false });
+
+  canvas.addEventListener("touchmove", (event) => {
+    event.preventDefault();
+    if (event.touches.length >= 2) {
+      updateTouchPinch(event.touches);
+      return;
+    }
+    if (event.touches.length === 1 && touchGesture.mode === "pan") updateTouchPan(event.touches[0]);
+  }, { passive: false });
+
+  canvas.addEventListener("touchend", (event) => {
+    event.preventDefault();
+    if (event.touches.length >= 2) {
+      beginTouchPinch(event.touches);
+      return;
+    }
+    if (event.touches.length === 1) {
+      beginTouchPan(event.touches[0]);
+      touchGesture.moved = true;
+      return;
+    }
+    if (touchGesture.mode === "pan" && !touchGesture.moved) {
+      const hit = pickLandmark(touchGesture.lastX, touchGesture.lastY);
+      if (hit) selectLandmark(hit.id, true);
+    }
+    resetTouchGesture();
+  }, { passive: false });
+
+  canvas.addEventListener("touchcancel", (event) => {
+    event.preventDefault();
+    resetTouchGesture();
+  }, { passive: false });
 
   canvas.addEventListener("wheel", (event) => {
     event.preventDefault();
     const point = pointerToCanvas(event);
-    const oldScale = state.scale;
     const zoomFactor = Math.exp(-event.deltaY * 0.0012);
-    state.scale = clamp(state.scale * zoomFactor, 0.52, 2.2);
-    const ratio = state.scale / oldScale;
-    state.offsetX = point.x - (point.x - state.offsetX) * ratio;
-    state.offsetY = point.y - (point.y - state.offsetY) * ratio;
-    state.targetOffsetX = state.offsetX;
-    state.targetOffsetY = state.offsetY;
-    clampPaintedCamera();
+    zoomAt(point, state.scale * zoomFactor);
   }, { passive: false });
 
   miniCanvas.addEventListener("click", (event) => {
@@ -1486,6 +2284,7 @@
     focusLandmark(selectedLandmark());
   });
 
+  ui.camera.addEventListener("click", toggleCameraMode);
   ui.cycle.addEventListener("click", cycleLandmark);
 
   window.addEventListener("keydown", (event) => {
@@ -1498,15 +2297,22 @@
       resetView();
       focusLandmark(selectedLandmark());
     }
+    if (event.key.toLowerCase() === "g" || event.key.toLowerCase() === "v") toggleCameraMode();
     if (event.key.toLowerCase() === "n") cycleLandmark();
   });
 
   window.addEventListener("resize", resize);
+  window.addEventListener("blur", resetInputState);
+  window.addEventListener("orientationchange", resetInputState);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) resetInputState();
+  });
 
   buildTiles();
   buildProps();
   createLabels();
   updateInspector();
+  updateCameraButton();
   resize();
   render();
 })();
