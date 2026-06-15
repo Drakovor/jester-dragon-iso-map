@@ -4,7 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>Drako Lair</title>
-    <link rel="stylesheet" href="./styles.css?v=drako-lair-game-v12" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css?v=drako-lair-cinematic-slice-v1" />
   </head>
   <body>
     <main class="map-shell">
@@ -19,7 +20,7 @@
         </div>
         <nav class="actions" aria-label="Map controls">
           <button id="reset-view" type="button" title="Recentrer la carte" aria-label="Recentrer la carte">Centre</button>
-          <button id="camera-mode" type="button" title="Changer la camera" aria-label="Changer la camera">Vue jeu</button>
+          <button id="camera-mode" type="button" title="Changer la camera" aria-label="Changer la camera">Atlas</button>
           <button id="cycle-point" type="button" title="Secteur suivant" aria-label="Secteur suivant">Suiv.</button>
         </nav>
       </header>
@@ -41,6 +42,7 @@
       <div id="labels" aria-hidden="true"></div>
     </main>
 
-    <script src="./app.js?v=drako-lair-game-v12"></script>
+    <script src="./vendor/pixi.min.js?v=drako-lair-cinematic-slice-v1"></script>
+    <script src="./app.js?v=drako-lair-cinematic-slice-v1"></script>
   </body>
 </html>

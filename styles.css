@@ -4,8 +4,8 @@
   --muted: #bba8cb;
   --purple: #6c2bd9;
   --purple-hot: #b875ff;
-  --gold: #dba34b;
-  --acid: #b9ef72;
+  --gold: #b66f3f;
+  --acid: #b8d98d;
   --ruby: #b23a5e;
   --cyan: #66c6d7;
   --panel: rgba(10, 5, 18, 0.64);
@@ -162,7 +162,7 @@ h1 {
   color: var(--ink);
   background:
     linear-gradient(135deg, rgba(108, 43, 217, 0.9), rgba(22, 10, 35, 0.92)),
-    radial-gradient(circle at 28% 16%, rgba(219, 163, 75, 0.22), transparent 54%);
+    radial-gradient(circle at 28% 16%, rgba(182, 111, 63, 0.16), transparent 54%);
   border: 1px solid rgba(218, 184, 255, 0.44);
   border-radius: 6px;
   box-shadow: 0 0 22px rgba(108, 43, 217, 0.24);
@@ -278,6 +278,27 @@ h2 {
   border-color: rgba(185, 239, 114, 0.7);
 }
 
+body[data-camera="game"] .topbar {
+  background:
+    linear-gradient(145deg, rgba(10, 4, 17, 0.58), rgba(3, 2, 7, 0.34));
+}
+
+body[data-camera="game"] .inspector {
+  width: min(320px, calc(100vw - 36px));
+  background:
+    linear-gradient(145deg, rgba(9, 4, 15, 0.66), rgba(4, 2, 8, 0.46));
+}
+
+body[data-camera="game"] .minimap-panel {
+  opacity: 0.7;
+  transform: scale(0.86);
+  transform-origin: left bottom;
+}
+
+body[data-camera="atlas"] .map-label {
+  display: none;
+}
+
 @media (max-width: 720px) {
   .topbar {
     top: 10px;
@@ -350,18 +371,18 @@ h2 {
     top: 8px;
     left: 8px;
     width: calc(100vw - 16px);
-    min-height: 38px;
-    padding: 5px 6px;
+    min-height: 34px;
+    padding: 4px 6px;
     background: linear-gradient(145deg, rgba(15, 7, 25, 0.46), rgba(5, 3, 10, 0.28));
   }
 
   body[data-camera="game"] .brand {
-    gap: 8px;
+    gap: 6px;
   }
 
   body[data-camera="game"] .crest {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
 
   body[data-camera="game"] .crest::before,
@@ -371,14 +392,14 @@ h2 {
   }
 
   body[data-camera="game"] h1 {
-    font-size: 17px;
+    font-size: 15px;
   }
 
   body[data-camera="game"] .actions button {
-    min-width: 39px;
-    height: 28px;
-    padding: 0 6px;
-    font-size: 9px;
+    min-width: 35px;
+    height: 25px;
+    padding: 0 5px;
+    font-size: 8px;
   }
 
   body[data-camera="game"] .minimap-panel {
